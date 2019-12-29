@@ -66,6 +66,8 @@ int mp_hal_stdin_rx_chr(void) {
             return c;
         }
         MICROPY_EVENT_POLL_HOOK
+        // yield the processor for 1 tick or until notified. To allow auto-light-sleep mode
+        // to kick-in this has to be raised to 4 at least.
         ulTaskNotifyTake(pdFALSE, 1);
     }
 }
@@ -129,7 +131,7 @@ void mp_hal_delay_ms(uint32_t ms) {
             break;
         }
         MICROPY_EVENT_POLL_HOOK
-        ulTaskNotifyTake(pdFALSE, 1);
+        ulTaskNotifyTake(pdTRUE, 1); // see comment in mp_hal_stdin_rx_chr
     }
     if (dt < us) {
         // do the remaining delay accurately
