@@ -104,6 +104,7 @@ STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *
     // mphalport.c use a delay of 4 ticks minimum. Don't want to change those due to
     // insufficiently explored side-effects and auto-light-sleep is not that usable in
     // the current state anyway... leaving this in for future reference
+
     // check optional auto-light-sleep keyword argument
     if (args[ARG_auto_light_sleep].u_bool) {
         pm.light_sleep_enable = true;
