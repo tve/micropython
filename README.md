@@ -1,5 +1,22 @@
 [![Build Status](https://travis-ci.org/micropython/micropython.png?branch=master)](https://travis-ci.org/micropython/micropython) [![Coverage Status](https://coveralls.io/repos/micropython/micropython/badge.png?branch=master)](https://coveralls.io/r/micropython/micropython?branch=master)
 
+About this fork of MicroPython
+==============================
+
+This is TvE's fork of MicroPython, which includes a number of PRs and fixes that are
+pending on mainline. Once these PRs get merged into mainline they will come back into
+this fork, but if they don't get merged, well, this is a place to get the goodies...
+
+Pending PRs included here:
+- #5473 ESP32: support dynamic freq scaling and wifi power save
+- #5711 RFC #2: Mechanism for allowing dynamic native modules to call port-specific functionality.
+- #5819 extmod/modussl: improve exception error messages 
+- #5825 extmod/modussl: fix socket and ussl read/recv/send/write errors for non-blocking sockets 
+- #5834 esp32: add espidf\_heap\_info to esp32 module
+- #5840 moduasyncio: Add SSL support 
+- #5850 esp32: consolidate check\_esp\_err functions
+- #5856 esp32: improve support for OTA updates
+
 The MicroPython project
 =======================
 <p align="center">
