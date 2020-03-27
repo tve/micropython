@@ -43,6 +43,8 @@
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/debug.h"
+#include "mbedtls/error.h"
+#include MBEDTLS_CONFIG_FILE
 
 typedef struct _mp_obj_ssl_socket_t {
     mp_obj_base_t base;
@@ -74,6 +76,23 @@ STATIC void mbedtls_debug(void *ctx, int level, const char *file, int line, cons
 }
 #endif
 
+STATIC NORETURN void mbedtls_raise_error(int err) {
+    // "small" negative integer error codes come from underlying stream/sockets, not mbedtls
+    if (err < 0 && err > -256) {
+        mp_raise_OSError(-err);
+    }
+    #if defined(MBEDTLS_ERROR_C)
+    // Including mbedtls_strerror takes about 16KB on the esp32 due to all the strings
+    // MBEDTLS_ERROR_C is the define used to tell mbedtls to provide the function
+    // found in MBEDTLS_CONFIG_FILE as defined in Makefile
+    char error_buf[80]; // mbedtls_strerror truncates if it doesn't fit, 80 seems sufficient
+    mbedtls_strerror(err, error_buf, sizeof(error_buf));
+    mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("mbedtls -0x%x: %s"), -err, error_buf);
+    #else
+    mp_raise_msg_varg(&mp_type_OSError, "mbedtls -0x%x", -err);
+    #endif
+}
+
 STATIC int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
     mp_obj_t sock = *(mp_obj_t *)ctx;
 
@@ -85,7 +104,7 @@ STATIC int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
         if (mp_is_nonblocking_error(err)) {
             return MBEDTLS_ERR_SSL_WANT_WRITE;
         }
-        return -err;
+        return -err; // convert an MP_ERRNO to something mbedtls passes through as error
     } else {
         return out_sz;
     }
@@ -221,7 +240,7 @@ cleanup:
     } else if (ret == MBEDTLS_ERR_X509_BAD_INPUT_DATA) {
         mp_raise_ValueError(MP_ERROR_TEXT("invalid cert"));
     } else {
-        mp_raise_OSError(MP_EIO);
+        mbedtls_raise_error(ret);
     }
 }
 

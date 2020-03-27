@@ -54,6 +54,46 @@ struct ssl_args {
 
 STATIC const mp_obj_type_t ussl_socket_type;
 
+// Table of errors
+struct ssl_errs {
+    int16_t errnum;
+    const char *errstr;
+};
+STATIC const struct ssl_errs ssl_error_tab[] = {
+    { SSL_NOT_OK, "NOT_OK" },
+    { SSL_ERROR_DEAD, "DEAD" },
+    { SSL_CLOSE_NOTIFY, "CLOSE_NOTIFY" },
+    { SSL_EAGAIN, "EAGAIN" },
+    { SSL_ERROR_CONN_LOST, "CONN_LOST" },
+    { SSL_ERROR_RECORD_OVERFLOW, "RECORD_OVERFLOW" },
+    { SSL_ERROR_SOCK_SETUP_FAILURE, "SOCK_SETUP_FAILURE" },
+    { SSL_ERROR_INVALID_HANDSHAKE, "INVALID_HANDSHAKE" },
+    { SSL_ERROR_INVALID_PROT_MSG, "INVALID_PROT_MSG" },
+    { SSL_ERROR_INVALID_HMAC, "INVALID_HMAC" },
+    { SSL_ERROR_INVALID_VERSION, "INVALID_VERSION" },
+    { SSL_ERROR_UNSUPPORTED_EXTENSION, "UNSUPPORTED_EXTENSION" },
+    { SSL_ERROR_INVALID_SESSION, "INVALID_SESSION" },
+    { SSL_ERROR_NO_CIPHER, "NO_CIPHER" },
+    { SSL_ERROR_INVALID_CERT_HASH_ALG, "INVALID_CERT_HASH_ALG" },
+    { SSL_ERROR_BAD_CERTIFICATE, "BAD_CERTIFICATE" },
+    { SSL_ERROR_INVALID_KEY, "INVALID_KEY" },
+    { SSL_ERROR_FINISHED_INVALID, "FINISHED_INVALID" },
+    { SSL_ERROR_NO_CERT_DEFINED, "NO_CERT_DEFINED" },
+    { SSL_ERROR_NO_CLIENT_RENOG, "NO_CLIENT_RENOG" },
+    { SSL_ERROR_NOT_SUPPORTED, "NOT_SUPPORTED" },
+    { 0, 0 },
+};
+
+STATIC NORETURN void ussl_raise_error(int err) {
+    for (int i = 0; ssl_error_tab[i].errnum != 0; i++) {
+        if (ssl_error_tab[i].errnum == err) {
+            mp_raise_msg_varg(&mp_type_OSError, "AXTLS %d: %s", err, ssl_error_tab[i].errstr);
+        }
+    }
+    mp_raise_OSError(err);
+}
+
+
 STATIC mp_obj_ssl_socket_t *ussl_socket_new(mp_obj_t sock, struct ssl_args *args) {
     #if MICROPY_PY_USSL_FINALISER
     mp_obj_ssl_socket_t *o = m_new_obj_with_finaliser(mp_obj_ssl_socket_t);
@@ -107,9 +147,8 @@ STATIC mp_obj_ssl_socket_t *ussl_socket_new(mp_obj_t sock, struct ssl_args *args
             int res = ssl_handshake_status(o->ssl_sock);
 
             if (res != SSL_OK) {
-                printf("ssl_handshake_status: %d\n", res);
                 ssl_display_error(res);
-                mp_raise_OSError(MP_EIO);
+                ussl_raise_error(res);
             }
         }
 
