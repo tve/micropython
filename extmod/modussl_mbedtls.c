@@ -44,6 +44,15 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/debug.h"
 
+// flags for _mp_obj_ssl_socket_t.poll_flag that control the poll ioctl
+// the issue is that when using ipoll we may be polling only for reading, and the socket may never
+// become readable because mbedtls needs to write soemthing (like a handshake or renegotiation) and
+// so poll never returns "it's readable" or "it's writable" and so nothing ever makes progress.
+// See also the commit message for
+// https://github.com/micropython/micropython/commit/9c7c082396f717a8a8eb845a0af407e78d38165f
+#define READ_NEEDS_WRITE 0x1 // mbedtls_ssl_read said "I need a write"
+#define WRITE_NEEDS_READ 0x2 // mbedtls_ssl_write said "I need a read"
+
 typedef struct _mp_obj_ssl_socket_t {
     mp_obj_base_t base;
     mp_obj_t sock;
@@ -54,6 +63,7 @@ typedef struct _mp_obj_ssl_socket_t {
     mbedtls_x509_crt cacert;
     mbedtls_x509_crt cert;
     mbedtls_pk_context pkey;
+    uint8_t poll_flag;
 } mp_obj_ssl_socket_t;
 
 struct ssl_args {
@@ -74,6 +84,27 @@ STATIC void mbedtls_debug(void *ctx, int level, const char *file, int line, cons
 }
 #endif
 
+STATIC mp_obj_t mod_ssl_errstr(mp_obj_t err_in) {
+    size_t err = mp_obj_get_int(err_in);
+    vstr_t vstr;
+    vstr_init_len(&vstr, 80);
+
+    // Including mbedtls_strerror takes about 16KB on the esp32 due to all the strings
+#if 1
+    vstr.buf[0] = 0;
+    mbedtls_strerror(err, vstr.buf, vstr.alloc);
+    vstr.len = strlen(vstr.buf);
+    if (vstr.len == 0) {
+        return MP_OBJ_NULL;
+    }
+#else
+    vstr_printf(vstr, "mbedtls error -0x%x\n", -err);
+#endif
+    return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_ssl_errstr_obj, mod_ssl_errstr);
+
+// _mbedtls_ssl_send is called by mbedtls to send bytes onto the underlying socket
 STATIC int _mbedtls_ssl_send(void *ctx, const byte *buf, size_t len) {
     mp_obj_t sock = *(mp_obj_t *)ctx;
 
@@ -194,10 +225,10 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
         }
     }
 
+    o->poll_flag = 0;
     if (args->do_handshake.u_bool) {
         while ((ret = mbedtls_ssl_handshake(&o->ssl)) != 0) {
             if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
-                printf("mbedtls_ssl_handshake error: -%x\n", -ret);
                 goto cleanup;
             }
         }
@@ -247,6 +278,7 @@ STATIC void socket_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kin
 STATIC mp_uint_t socket_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *errcode) {
     mp_obj_ssl_socket_t *o = MP_OBJ_TO_PTR(o_in);
 
+    o->poll_flag &= ~READ_NEEDS_WRITE; // clear flag
     int ret = mbedtls_ssl_read(&o->ssl, buf, size);
     if (ret == MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY) {
         // end of stream
@@ -261,6 +293,7 @@ STATIC mp_uint_t socket_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *errc
         // If handshake is not finished, read attempt may end up in protocol
         // wanting to write next handshake message. The same may happen with
         // renegotation.
+        o->poll_flag |= READ_NEEDS_WRITE; // set flag
         ret = MP_EWOULDBLOCK;
     }
     *errcode = ret;
@@ -270,6 +303,7 @@ STATIC mp_uint_t socket_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *errc
 STATIC mp_uint_t socket_write(mp_obj_t o_in, const void *buf, mp_uint_t size, int *errcode) {
     mp_obj_ssl_socket_t *o = MP_OBJ_TO_PTR(o_in);
 
+    o->poll_flag &= ~WRITE_NEEDS_READ; // clear flag
     int ret = mbedtls_ssl_write(&o->ssl, buf, size);
     if (ret >= 0) {
         return ret;
@@ -280,6 +314,7 @@ STATIC mp_uint_t socket_write(mp_obj_t o_in, const void *buf, mp_uint_t size, in
         // If handshake is not finished, write attempt may end up in protocol
         // wanting to read next handshake message. The same may happen with
         // renegotation.
+        o->poll_flag |= WRITE_NEEDS_READ; // set flag
         ret = MP_EWOULDBLOCK;
     }
     *errcode = ret;
@@ -306,6 +341,33 @@ STATIC mp_uint_t socket_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, i
         mbedtls_ssl_config_free(&self->conf);
         mbedtls_ctr_drbg_free(&self->ctr_drbg);
         mbedtls_entropy_free(&self->entropy);
+    } else if (request == MP_STREAM_POLL) {
+        // If we're polling to read but not write but mbedtls previously said it needs to write in
+        // order to be able to read then poll for both and if either is available pretend the socket
+        // is readable. When the app then performs a read, mbedtls is happy to perform the writes as
+        // well. Essentially, what we're ensuring is that one of mbedtls' read/write functions is
+        // called as soon as the socket can do something.
+        if ((arg & MP_STREAM_POLL_RD) && !(arg & MP_STREAM_POLL_WR) &&
+                self->poll_flag & READ_NEEDS_WRITE) {
+            arg |= MP_STREAM_POLL_WR;
+            mp_uint_t ret = mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
+            if (ret & MP_STREAM_POLL_WR) {
+                ret |= MP_STREAM_POLL_RD;
+                ret &= ~MP_STREAM_POLL_WR;
+            }
+            return ret;
+        // Now comes the same logic flipped around for write
+        } else if ((arg & MP_STREAM_POLL_WR) && !(arg & MP_STREAM_POLL_RD) &&
+                self->poll_flag & WRITE_NEEDS_READ) {
+            arg |= MP_STREAM_POLL_RD;
+            mp_uint_t ret = mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
+            if (ret & MP_STREAM_POLL_RD) {
+                ret |= MP_STREAM_POLL_WR;
+                ret &= ~MP_STREAM_POLL_RD;
+            }
+            return ret;
+        }
+        // fall-through if there's no wonky XX_NEEDS_YY situation
     }
     // Pass all requests down to the underlying socket
     return mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
@@ -367,6 +429,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mod_ssl_wrap_socket_obj, 1, mod_ssl_wrap_socke
 STATIC const mp_rom_map_elem_t mp_module_ssl_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ussl) },
     { MP_ROM_QSTR(MP_QSTR_wrap_socket), MP_ROM_PTR(&mod_ssl_wrap_socket_obj) },
+    { MP_ROM_QSTR(MP_QSTR_errstr), MP_ROM_PTR(&mod_ssl_errstr_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_ssl_globals, mp_module_ssl_globals_table);
