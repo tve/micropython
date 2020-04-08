@@ -73,7 +73,9 @@
 #define MICROPY_REPL_INFO           (1)
 #define MICROPY_REPL_EMACS_KEYS     (1)
 #define MICROPY_REPL_AUTO_INDENT    (1)
+#ifndef MICROPY_LONGINT_IMPL
 #define MICROPY_LONGINT_IMPL        (MICROPY_LONGINT_IMPL_MPZ)
+#endif
 #define MICROPY_ENABLE_SOURCE_LINE  (1)
 #ifndef MICROPY_FLOAT_IMPL // can be configured by each board via mpconfigboard.mk
 #define MICROPY_FLOAT_IMPL          (MICROPY_FLOAT_IMPL_FLOAT)

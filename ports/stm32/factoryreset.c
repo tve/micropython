@@ -32,7 +32,7 @@
 #include "storage.h"
 #include "factoryreset.h"
 
-#if MICROPY_HW_ENABLE_STORAGE
+#if MICROPY_HW_ENABLE_STORAGE && MICROPY_FS_FACTORY_RESET
 
 static const char fresh_boot_py[] =
     "# boot.py -- run on boot-up\r\n"

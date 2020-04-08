@@ -127,6 +127,18 @@ extern uint8_t _ram_fs_cache_end[];
 #define FLASH_MEM_SEG1_START_ADDR ((long)&_flash_fs_start)
 #define FLASH_MEM_SEG1_NUM_BLOCKS ((&_flash_fs_end - &_flash_fs_start) / 512)
 
+#elif defined(STM32L072xx)
+
+extern uint8_t _flash_fs_start;
+extern uint8_t _flash_fs_end;
+extern uint8_t _ram_fs_cache_start[]; // size determined by linker file
+extern uint8_t _ram_fs_cache_end[];
+
+#define CACHE_MEM_START_ADDR ((uintptr_t)&_ram_fs_cache_start[0])
+#define FLASH_SECTOR_SIZE_MAX (512)
+#define FLASH_MEM_SEG1_START_ADDR ((long)&_flash_fs_start)
+#define FLASH_MEM_SEG1_NUM_BLOCKS ((&_flash_fs_end - &_flash_fs_start) / 512)
+
 #else
 #error "no internal flash storage support for this MCU"
 #endif

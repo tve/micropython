@@ -212,6 +212,7 @@ MP_NOINLINE STATIC bool init_flash_fs(uint reset_mode) {
     mp_obj_t mount_point = MP_OBJ_NEW_QSTR(MP_QSTR__slash_flash);
     int ret = mp_vfs_mount_and_chdir_protected(bdev, mount_point);
 
+    #if MICROPY_FS_FACTORY_RESET
     if (ret == -MP_ENODEV && bdev == MP_OBJ_FROM_PTR(&pyb_flash_obj) && reset_mode != 3) {
         // No filesystem, bdev is still the default (so didn't detect a possibly corrupt littlefs),
         // and didn't already create a filesystem, so try to create a fresh one now.
@@ -220,6 +221,7 @@ MP_NOINLINE STATIC bool init_flash_fs(uint reset_mode) {
             ret = mp_vfs_mount_and_chdir_protected(bdev, mount_point);
         }
     }
+    #endif
 
     if (ret != 0) {
         printf("MPY: can't mount flash\n");
