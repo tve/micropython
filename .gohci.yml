@@ -5,10 +5,9 @@ workers:
   - cmd:
     - pwd
   - cmd:
-    - cd
-    - ports/esp32
-  - cmd:
     - make
+    - -C
+    - ports/esp32
     - ESPIDF=/home/sw/gohci/esp-idf-v4
     - "PATH=/home/sw/gohci/xtensa-esp32-elf-8.2.0/bin:/usr/local/bin:/usr/sbin:/usr/bin:/bin"
     - PORT=/dev/ttyUSB0
