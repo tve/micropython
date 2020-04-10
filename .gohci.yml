@@ -3,8 +3,7 @@ workers:
 - name: esp32
 - checks:
   - cmd:
-    - exit
-    - 1
+    - pwd
   - cmd:
     - /home/sw/gohci/esp32-build.sh
   - cmd:
