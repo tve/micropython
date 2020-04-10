@@ -7,4 +7,4 @@ workers:
   - cmd:
     - /home/sw/gohci/esp32-build.sh
   - cmd:
-    - /home/sw/gohci/esp32-simple.sh
+    - /home/sw/gohci/esp32-basics.sh
