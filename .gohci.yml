@@ -1,10 +1,18 @@
 version: 1
 workers:
 - name: esp32
-- checks:
+  checks:
   - cmd:
     - pwd
   - cmd:
-    - /home/gohci/esp32-build.sh
+    - /home/sw/gohci/esp32-build.sh
   - cmd:
-    - /home/gohci/esp32-basics.sh
+    - /home/sw/gohci/esp32-basics.sh
+- name: stm32
+  checks:
+  - cmd:
+    - pwd
+  - cmd:
+    - /home/sw/gohci/stm32-build.sh
+  - cmd:
+    - /home/sw/gohci/stm32-basics.sh
