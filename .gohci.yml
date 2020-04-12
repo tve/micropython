@@ -5,6 +5,6 @@ workers:
   - cmd:
     - pwd
   - cmd:
-    - /home/sw/gohci/esp32-build.sh
+    - /home/gohci/esp32-build.sh
   - cmd:
-    - /home/sw/gohci/esp32-basics.sh
+    - /home/gohci/esp32-basics.sh
