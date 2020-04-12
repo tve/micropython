@@ -8,7 +8,7 @@ workers:
     - /home/sw/gohci/esp32-build.sh
   - cmd:
     - /home/sw/gohci/esp32-basics.sh
-- name: u3
+- name: gohci-u3
   checks:
   - cmd:
     - pwd
