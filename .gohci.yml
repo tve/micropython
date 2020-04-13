@@ -1,18 +1,19 @@
 version: 1
 workers:
-- name: esp32
-  checks:
-  - cmd:
-    - pwd
-  - cmd:
-    - /home/gohci/esp32-build.sh
-  - cmd:
-    - /home/gohci/esp32-basics.sh
 - name: gohci-u3
   checks:
   - cmd:
-    - pwd
+    - date
+  - cmd:
+    - git
+    - describe
+    - --dirty
+    - --always
+  - cmd:
+    - /home/gohci/esp32-build.sh
+  - cmd:
+    - /home/gohci/esp32-full.sh
   - cmd:
     - /home/gohci/stm32-build.sh
   - cmd:
-    - /home/gohci/stm32-basics.sh
+    - /home/gohci/stm32-full.sh
