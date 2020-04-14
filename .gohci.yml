@@ -12,3 +12,5 @@ workers:
     - /home/gohci/stm32-build.sh
   - cmd:
     - /home/gohci/stm32-full.sh
+  - cmd:
+    - /home/gohci/repo-save.sh
