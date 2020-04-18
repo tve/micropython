@@ -64,6 +64,7 @@ typedef struct _mp_obj_ssl_socket_t {
     mbedtls_x509_crt cert;
     mbedtls_pk_context pkey;
     uint8_t poll_flag;
+    uint8_t poll_by_read; // true: at next poll try to read first
 } mp_obj_ssl_socket_t;
 
 struct ssl_args {
@@ -226,6 +227,7 @@ STATIC mp_obj_ssl_socket_t *socket_new(mp_obj_t sock, struct ssl_args *args) {
     }
 
     o->poll_flag = 0;
+    o->poll_by_read = 0;
     if (args->do_handshake.u_bool) {
         while ((ret = mbedtls_ssl_handshake(&o->ssl)) != 0) {
             if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
@@ -285,6 +287,9 @@ STATIC mp_uint_t socket_read(mp_obj_t o_in, void *buf, mp_uint_t size, int *errc
         return 0;
     }
     if (ret >= 0) {
+        // if we got all we wanted, for the next poll try a read first 'cause
+        // there may be data in the mbedtls record buffer
+        o->poll_by_read = ret == size;
         return ret;
     }
     if (ret == MBEDTLS_ERR_SSL_WANT_READ) {
@@ -342,6 +347,13 @@ STATIC mp_uint_t socket_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, i
         mbedtls_ctr_drbg_free(&self->ctr_drbg);
         mbedtls_entropy_free(&self->entropy);
     } else if (request == MP_STREAM_POLL) {
+        mp_uint_t ret = 0;
+        // If the last read returned everything asked for there may be more in the mbedtls buffer,
+        // so find out. (There doesn't seem to be an equivalent issue with writes.)
+        if ((arg & MP_STREAM_POLL_RD) && self->poll_by_read) {
+            size_t avail = mbedtls_ssl_get_bytes_avail(&self->ssl);
+            if (avail > 0) ret = MP_STREAM_POLL_RD;
+        }
         // If we're polling to read but not write but mbedtls previously said it needs to write in
         // order to be able to read then poll for both and if either is available pretend the socket
         // is readable. When the app then performs a read, mbedtls is happy to perform the writes as
@@ -350,7 +362,7 @@ STATIC mp_uint_t socket_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, i
         if ((arg & MP_STREAM_POLL_RD) && !(arg & MP_STREAM_POLL_WR) &&
                 self->poll_flag & READ_NEEDS_WRITE) {
             arg |= MP_STREAM_POLL_WR;
-            mp_uint_t ret = mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
+            ret |= mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
             if (ret & MP_STREAM_POLL_WR) {
                 ret |= MP_STREAM_POLL_RD;
                 ret &= ~MP_STREAM_POLL_WR;
@@ -360,14 +372,15 @@ STATIC mp_uint_t socket_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, i
         } else if ((arg & MP_STREAM_POLL_WR) && !(arg & MP_STREAM_POLL_RD) &&
                 self->poll_flag & WRITE_NEEDS_READ) {
             arg |= MP_STREAM_POLL_RD;
-            mp_uint_t ret = mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
+            ret |= mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
             if (ret & MP_STREAM_POLL_RD) {
                 ret |= MP_STREAM_POLL_WR;
                 ret &= ~MP_STREAM_POLL_RD;
             }
             return ret;
         }
-        // fall-through if there's no wonky XX_NEEDS_YY situation
+        // Pass down to underlying socket
+        return ret | mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
     }
     // Pass all requests down to the underlying socket
     return mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
