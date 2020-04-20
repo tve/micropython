@@ -462,6 +462,9 @@ mp_obj_t mp_builtin___import__(size_t n_args, const mp_obj_t *args) {
                 top_module_obj = module_obj;
             }
             last = i + 1;
+            //printf("Imported %s\n", qstr_str(mod_name));
+            extern void gc_collect();
+            gc_collect();
         }
     }
 
