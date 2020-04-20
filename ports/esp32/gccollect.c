@@ -59,8 +59,14 @@ static void gc_collect_inner(int level) {
     #endif
 }
 
+static uint64_t last_gc = 0;
 void gc_collect(void) {
+    int64_t t0 = esp_timer_get_time();
     gc_collect_start();
     gc_collect_inner(0);
     gc_collect_end();
+    int64_t t1 = esp_timer_get_time();
+    uint32_t pct = (uint32_t)(t1-t0)*100/(uint32_t)(t1-last_gc);
+    printf("GC in %lluus %u%%\n", (uint64_t)(t1-t0), pct);
+    last_gc = t1;
 }
