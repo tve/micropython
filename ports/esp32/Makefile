@@ -292,7 +292,7 @@ $(HEADER_BUILD)/qstrdefs.generated.h: $(SDKCONFIG_H) $(BOARD_DIR)/mpconfigboard.
 ifndef MPY_DYNRUNTIME
 
 # these flags are common to C and C++ compilation
-CFLAGS_COMMON = -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields \
+CFLAGS_COMMON = -Os -g -ffunction-sections -fdata-sections -fstrict-volatile-bitfields \
 	-mlongcalls -nostdlib \
 	-Wall -Werror -Wno-error=unused-function -Wno-error=unused-but-set-variable \
 	-Wno-error=unused-variable -Wno-error=deprecated-declarations \
@@ -328,7 +328,6 @@ LIBSTDCXX_FILE_NAME = $(shell $(CXX) $(CXXFLAGS) -print-file-name=libstdc++.a)
 
 # Debugging/Optimization
 ifeq ($(DEBUG), 1)
-CFLAGS += -g
 COPT = -O0
 else
 #CFLAGS += -fdata-sections -ffunction-sections
