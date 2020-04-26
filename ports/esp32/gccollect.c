@@ -66,7 +66,9 @@ void gc_collect(void) {
     gc_collect_inner(0);
     gc_collect_end();
     int64_t t1 = esp_timer_get_time();
+#if 0
     uint32_t pct = (uint32_t)(t1-t0)*100/(uint32_t)(t1-last_gc);
     printf("GC in %lluus %u%%\n", (uint64_t)(t1-t0), pct);
+#endif
     last_gc = t1;
 }
