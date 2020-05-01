@@ -4,7 +4,7 @@ workers:
   checks:
   - cmd:
     - timeout
-    - 4m
+    - 8m
     - /home/gohci/esp32-build.sh
     - 4.0
   - cmd:
@@ -14,7 +14,7 @@ workers:
     - 4.0
   - cmd:
     - timeout
-    - 4m
+    - 8m
     - /home/gohci/stm32-build.sh
   - cmd:
     - timeout
@@ -22,7 +22,7 @@ workers:
     - /home/gohci/stm32-full.sh
   - cmd:
     - timeout
-    - 4m
+    - 8m
     - /home/gohci/esp32-build.sh
     - 3.3
   - cmd:
