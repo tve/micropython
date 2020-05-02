@@ -71,5 +71,5 @@ except ValueError as e:
 # verify that settime and time_us handle sub-second precision
 t1 = time.mktime((2020, 4, 1, 10, 23, 45, 0, 0, 0))
 time.settime(t1, 500000)
-td = time.time_us() - t1*1000000 - 500000
+td = time.time_us() - t1 * 1000000 - 500000
 print("frac settime", td > 0 and td < 600000)
