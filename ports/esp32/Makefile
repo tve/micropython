@@ -164,6 +164,7 @@ INC_ESPCOMP += -I$(ESPCOMP)/esp32/include
 INC_ESPCOMP += -I$(ESPCOMP)/espcoredump/include
 INC_ESPCOMP += -I$(ESPCOMP)/soc/include
 INC_ESPCOMP += -I$(ESPCOMP)/soc/esp32/include
+INC_ESPCOMP += -I$(ESPCOMP)/esp_adc_cal/include
 INC_ESPCOMP += -I$(ESPCOMP)/heap/include
 INC_ESPCOMP += -I$(ESPCOMP)/log/include
 INC_ESPCOMP += -I$(ESPCOMP)/nvs_flash/include
@@ -489,6 +490,8 @@ ESPIDF_VFS_O = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/vfs/*.c))
 
 ESPIDF_LOG_O = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/log/*.c))
 
+ESPIDF_ADCCAL_O = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/esp_adc_cal/*.c))
+
 ESPIDF_XTENSA_DEBUG_MODULE_O = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/xtensa-debug-module/*.c))
 
 ESPIDF_TCPIP_ADAPTER_O = $(patsubst %.c,%.o,$(wildcard $(ESPCOMP)/tcpip_adapter/*.c))
@@ -638,6 +641,7 @@ $(eval $(call gen_espidf_lib_rule,freertos,$(ESPIDF_FREERTOS_O)))
 $(eval $(call gen_espidf_lib_rule,vfs,$(ESPIDF_VFS_O)))
 $(eval $(call gen_espidf_lib_rule,json,$(ESPIDF_JSON_O)))
 $(eval $(call gen_espidf_lib_rule,log,$(ESPIDF_LOG_O)))
+$(eval $(call gen_espidf_lib_rule,adccal,$(ESPIDF_ADCCAL_O)))
 $(eval $(call gen_espidf_lib_rule,xtensa-debug-module,$(ESPIDF_XTENSA_DEBUG_MODULE_O)))
 $(eval $(call gen_espidf_lib_rule,tcpip_adapter,$(ESPIDF_TCPIP_ADAPTER_O)))
 $(eval $(call gen_espidf_lib_rule,app_trace,$(ESPIDF_APP_TRACE_O)))
