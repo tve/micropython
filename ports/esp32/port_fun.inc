@@ -98,6 +98,9 @@ ungetc,
 utoa,
 wcrtomb,
 //
+// Section one-bis: stuff in MicroPython that should have been in MP-fun_table but was forgotten
+mp_arg_parse_all_kw_array,
+//
 // Second section:
 // List of ESP-IDF entry points culled from portions of the docs.
 // Initially generated for ESP-IDF v4.0 release using 'port_fun' target in Makefile.
