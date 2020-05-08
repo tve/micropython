@@ -98,8 +98,27 @@ ungetc,
 utoa,
 wcrtomb,
 //
-// Section one-bis: stuff in MicroPython that should have been in MP-fun_table but was forgotten
+// Section one-bis: stuff in MicroPython that should have been in mp_fun_table but was forgotten
 mp_arg_parse_all_kw_array,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
+mp_port_fun_does_not_exist,
 //
 // Second section:
 // List of ESP-IDF entry points culled from portions of the docs.
