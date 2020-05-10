@@ -60,12 +60,19 @@ typedef struct _machine_rtc_obj_t {
 #define MICROPY_HW_RTC_USER_MEM_MAX     2048
 #endif
 
+#if MICROPY_HW_RTC_USER_MEM_MAX > 0 && MICROPY_PY_UZLIB > 0
+#include "extmod/uzlib/tinf.h"
+#endif
+
 // Optionally compile user memory functionality if the size of memory is greater than 0
 #if MICROPY_HW_RTC_USER_MEM_MAX > 0
 #define MEM_MAGIC           0x75507921
-RTC_DATA_ATTR uint32_t rtc_user_mem_magic;
-RTC_DATA_ATTR uint16_t rtc_user_mem_len;
-RTC_DATA_ATTR uint8_t rtc_user_mem_data[MICROPY_HW_RTC_USER_MEM_MAX];
+RTC_NOINIT_ATTR uint32_t rtc_user_mem_magic;
+RTC_NOINIT_ATTR uint16_t rtc_user_mem_len;
+#if MICROPY_PY_UZLIB
+RTC_NOINIT_ATTR uint16_t rtc_user_mem_crc; // 32-bit CRC folded in half
+#endif
+RTC_NOINIT_ATTR uint8_t rtc_user_mem_data[MICROPY_HW_RTC_USER_MEM_MAX];
 #endif
 
 // singleton RTC object
@@ -76,15 +83,31 @@ machine_rtc_config_t machine_rtc_config = {
     .ext0_pin = -1
 };
 
+// forward decl
+STATIC mp_obj_t machine_rtc_init_helper(mp_obj_t self, mp_uint_t n_args, const mp_obj_t *args);
+
 STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
-    mp_arg_check_num(n_args, n_kw, 0, 0, false);
+    mp_arg_check_num(n_args, n_kw, 0, 1, false);
 
-    // return constant object
-    return (mp_obj_t)&machine_rtc_obj;
+    // get constant object
+    mp_obj_t self = (mp_obj_t)&machine_rtc_obj;
+
+    // call init
+    if (n_args == 0) {
+        machine_rtc_init_helper(self, 0, NULL);
+    } else {
+        machine_rtc_init_helper(self, n_args-1, args+1);
+    }
+
+    return self;
 }
+STATIC mp_obj_t machine_rtc_init(mp_uint_t n_args, const mp_obj_t *args) {
+    return machine_rtc_init_helper(args[0], n_args - 1, args + 1);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_init_obj, 1, 2, machine_rtc_init);
 
-STATIC mp_obj_t machine_rtc_datetime_helper(mp_uint_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t machine_rtc_datetime_helper(mp_obj_t self, mp_uint_t n_args, const mp_obj_t *args) {
     if (n_args == 1) {
         // Get time
 
@@ -122,33 +145,56 @@ STATIC mp_obj_t machine_rtc_datetime_helper(mp_uint_t n_args, const mp_obj_t *ar
     }
 }
 STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
-    return machine_rtc_datetime_helper(n_args, args);
+    return machine_rtc_datetime_helper(args[0], n_args-1, args+1);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_datetime_obj, 1, 2, machine_rtc_datetime);
 
-STATIC mp_obj_t machine_rtc_init(mp_uint_t n_args, const mp_obj_t *args) {
-    if (n_args == 2) {
-        machine_rtc_datetime_helper(n_args, args);
+#if MICROPY_PY_UZLIB
+STATIC uint16_t machine_rtc_memcrc(const uint8_t *data) {
+    if (data == NULL) data = rtc_user_mem_data;
+    uint32_t calc_crc = uzlib_crc32(&rtc_user_mem_magic, sizeof(rtc_user_mem_magic), 0xffffffff);
+    calc_crc = uzlib_crc32(&rtc_user_mem_len, sizeof(rtc_user_mem_len), calc_crc);
+    calc_crc = uzlib_crc32(data, rtc_user_mem_len, calc_crc);
+    return (calc_crc & 0xffff) ^ (calc_crc >> 16);
+}
+#endif
+
+STATIC mp_obj_t machine_rtc_init_helper(mp_obj_t self, mp_uint_t n_args, const mp_obj_t *args) {
+    if (n_args > 0) {
+        machine_rtc_datetime_helper(self, n_args, args);
     }
 
     #if MICROPY_HW_RTC_USER_MEM_MAX > 0
-    if (rtc_user_mem_magic != MEM_MAGIC) {
-        rtc_user_mem_magic = MEM_MAGIC;
+    uint8_t ok = rtc_user_mem_magic == MEM_MAGIC && rtc_user_mem_len <= MICROPY_HW_RTC_USER_MEM_MAX;
+    #if MICROPY_PY_UZLIB
+    ok = ok && (machine_rtc_memcrc(NULL) == rtc_user_mem_crc);
+    #endif
+    if (!ok) {
+        rtc_user_mem_magic = 0;
         rtc_user_mem_len = 0;
     }
     #endif
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_init_obj, 1, 2, machine_rtc_init);
 
 #if MICROPY_HW_RTC_USER_MEM_MAX > 0
 STATIC mp_obj_t machine_rtc_memory(mp_uint_t n_args, const mp_obj_t *args) {
     if (n_args == 1) {
-        // read RTC memory
-        uint8_t rtcram[MICROPY_HW_RTC_USER_MEM_MAX];
-        memcpy((char *)rtcram, (char *)rtc_user_mem_data, rtc_user_mem_len);
-        return mp_obj_new_bytes(rtcram, rtc_user_mem_len);
+        ulTaskNotifyTake(pdFALSE, 10);
+        if (rtc_user_mem_len == 0) return mp_const_empty_bytes;
+        // Read RTC memory -- There's a small chance that magic is valid, len is random and
+        // CRC will fail. In that case we might allocate up to MICROPY_HW_RTC_USER_MEM_MAX
+        // in vain, but doing the CRC first is very slow 'cause RTC RAM is slow.
+        mp_obj_t buf = mp_obj_new_bytes(rtc_user_mem_data, rtc_user_mem_len);
+        #if MICROPY_PY_UZLIB
+        const byte *data = (const byte *)mp_obj_str_get_str(buf);
+        if (machine_rtc_memcrc(data) != rtc_user_mem_crc) {
+            rtc_user_mem_len = 0; // invalidate
+            return mp_const_empty_bytes;
+        }
+        #endif
+        return buf;
     } else {
         // write RTC memory
         mp_buffer_info_t bufinfo;
@@ -157,8 +203,12 @@ STATIC mp_obj_t machine_rtc_memory(mp_uint_t n_args, const mp_obj_t *args) {
         if (bufinfo.len > MICROPY_HW_RTC_USER_MEM_MAX) {
             mp_raise_ValueError(MP_ERROR_TEXT("buffer too long"));
         }
+        rtc_user_mem_magic = MEM_MAGIC;
         memcpy((char *)rtc_user_mem_data, (char *)bufinfo.buf, bufinfo.len);
         rtc_user_mem_len = bufinfo.len;
+        #if MICROPY_PY_UZLIB
+        rtc_user_mem_crc = machine_rtc_memcrc(bufinfo.buf);
+        #endif
         return mp_const_none;
     }
 }
