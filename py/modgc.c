@@ -68,6 +68,14 @@ STATIC mp_obj_t gc_mem_free(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(gc_mem_free_obj, gc_mem_free);
 
+// mem_maxfree(): return the number of bytes in the largest block of available heap RAM
+STATIC mp_obj_t gc_mem_maxfree(void) {
+    gc_info_t info;
+    gc_info(&info);
+    return MP_OBJ_NEW_SMALL_INT(info.max_free*MICROPY_BYTES_PER_GC_BLOCK);
+}
+MP_DEFINE_CONST_FUN_OBJ_0(gc_mem_maxfree_obj, gc_mem_maxfree);
+
 // mem_alloc(): return the number of bytes of heap RAM that are allocated
 STATIC mp_obj_t gc_mem_alloc(void) {
     gc_info_t info;
@@ -102,6 +110,7 @@ STATIC const mp_rom_map_elem_t mp_module_gc_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_enable), MP_ROM_PTR(&gc_enable_obj) },
     { MP_ROM_QSTR(MP_QSTR_isenabled), MP_ROM_PTR(&gc_isenabled_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem_free), MP_ROM_PTR(&gc_mem_free_obj) },
+    { MP_ROM_QSTR(MP_QSTR_mem_maxfree), MP_ROM_PTR(&gc_mem_maxfree_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem_alloc), MP_ROM_PTR(&gc_mem_alloc_obj) },
     #if MICROPY_GC_ALLOC_THRESHOLD
     { MP_ROM_QSTR(MP_QSTR_threshold), MP_ROM_PTR(&gc_threshold_obj) },
