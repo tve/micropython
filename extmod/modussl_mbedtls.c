@@ -100,7 +100,7 @@ STATIC NORETURN void mbedtls_raise_error(int err) {
     mbedtls_strerror(err, error_buf, sizeof(error_buf));
     mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("mbedtls -0x%x: %s"), -err, error_buf);
     #else
-    mp_raise_msg_varg(&mp_type_OSError, "mbedtls -0x%x", -err);
+    mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("mbedtls -0x%x"), -err);
     #endif
 }
 
@@ -110,7 +110,7 @@ STATIC mp_obj_t mod_ssl_errstr(mp_obj_t err_in) {
     vstr_init_len(&vstr, 80);
 
     // Including mbedtls_strerror takes about 16KB on the esp32 due to all the strings
-    #if 1
+    #if defined(MBEDTLS_ERROR_C)
     vstr.buf[0] = 0;
     mbedtls_strerror(err, vstr.buf, vstr.alloc);
     vstr.len = strlen(vstr.buf);
@@ -118,7 +118,7 @@ STATIC mp_obj_t mod_ssl_errstr(mp_obj_t err_in) {
         return MP_OBJ_NULL;
     }
     #else
-    vstr_printf(vstr, "mbedtls error -0x%x\n", -err);
+    vstr_printf(&vstr, "mbedtls error -0x%x\n", -err);
     #endif
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
