@@ -195,7 +195,7 @@ STATIC mp_obj_t machine_reset_cause(size_t n_args, const mp_obj_t *pos_args, mp_
             break;
         case ESP_RST_SW:
         case ESP_RST_PANIC:
-            return MP_OBJ_NEW_SMALL_INT(MP_SOFT_RESET);
+            return MP_OBJ_NEW_SMALL_INT(MP_HARD_RESET);
             break;
         case ESP_RST_INT_WDT:
         case ESP_RST_TASK_WDT:
