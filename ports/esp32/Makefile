@@ -328,6 +328,7 @@ LIBGCC_FILE_NAME = $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 LIBSTDCXX_FILE_NAME = $(shell $(CXX) $(CXXFLAGS) -print-file-name=libstdc++.a)
 
 # Debugging/Optimization
+CFLAGS += -g
 ifeq ($(DEBUG), 1)
 COPT = -O0
 else
@@ -409,6 +410,27 @@ LIB_SRC_C = $(addprefix lib/,\
 	utils/interrupt_char.c \
 	utils/sys_stdio_mphal.c \
 	)
+
+#esp-idf generated module
+ESPIDFMOD_SOURCE = $(TOP)/lib/lv_bindings/driver/esp32/espidf.h
+ALL_ESPIDFMOD_SRC = $(shell find $(subst -I,,$(INC_ESPCOMP)) -type f) $(ESPIDFMOD_SOURCE) $(SDKCONFIG_H)
+ESPIDFMOD_MODULE = $(BUILD)/espidfmod/mp_espidf.c
+ESPIDFMOD_PP = $(BUILD)/espidfmod/mp_espidf.pp.c
+CFLAGS_MOD += $(ESPIDFMOD_CFLAGS) -Wno-deprecated-declarations
+
+$(ESPIDFMOD_MODULE): $(ALL_ESPIDFMOD_SRC) $(LVGL_BINDING_DIR)/gen/gen_mpy.py
+	$(ECHO) "ESPIDFMOD-GEN $@"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)$(CPP) $(ESPIDFMOD_CFLAGS) -DPYCPARSER -I $(LVGL_BINDING_DIR)/pycparser/utils/fake_libc_include $(INC) $(INC_ESPCOMP) $(ESPIDFMOD_SOURCE) > $(ESPIDFMOD_PP)
+	$(Q)$(PYTHON) $(LVGL_BINDING_DIR)/gen/gen_mpy.py -M espidf -E $(ESPIDFMOD_PP) $(ESPIDFMOD_SOURCE) > $@
+
+LIB_SRC_C += \
+	lib/lv_bindings/driver/esp32/modlvesp32.c \
+	lib/lv_bindings/driver/esp32/modrtch.c \
+	lib/lv_bindings/driver/esp32/espidf.c \
+	$(ESPIDFMOD_MODULE) \
+	lib/lv_bindings/driver/esp32/modxpt2046.c \
+	lib/lv_bindings/driver/esp32/modILI9341.c \
 
 DRIVERS_SRC_C = $(addprefix drivers/,\
 	bus/softspi.c \
