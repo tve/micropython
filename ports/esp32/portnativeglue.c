@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  */
 
+#if 0
 // We need the MICROPY_PORT_FUN_TABLE #define from mpconfigport.h but need to exclude pulling in the
 // rest of the .h world because it spoils the phony "voidfun" type decl below. We #define some
 // XXX_H defines to prevent recursive inclusion.
@@ -36,6 +37,9 @@ typedef int size_t;
 typedef int int32_t;
 typedef unsigned int uint32_t;
 #include "mpconfigport.h"
+#else
+#define MICROPY_PORT_FUN_TABLE (1)
+#endif
 
 #if MICROPY_PORT_FUN_TABLE
 
