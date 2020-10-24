@@ -101,8 +101,8 @@ wcrtomb,
 //
 // Section one-bis: stuff in MicroPython that should have been in mp_fun_table but was forgotten
 mp_arg_parse_all_kw_array,
-mp_port_fun_does_not_exist,
-mp_port_fun_does_not_exist,
+mp_sched_schedule,
+mp_hal_wake_main_task_from_isr,
 mp_port_fun_does_not_exist,
 mp_port_fun_does_not_exist,
 mp_port_fun_does_not_exist,
