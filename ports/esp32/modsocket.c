@@ -362,7 +362,10 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     MP_THREAD_GIL_ENTER();
     lwip_freeaddrinfo(res);
     if (r != 0) {
-        mp_raise_OSError(errno);
+        // side-note: LwIP internally doesn't seem to have an error code for ECONNREFUSED and
+        // so refused connections show up as ECONNRESET. Could be band-aided for blocking connect,
+        // harder to do for nonblocking.
+        exception_from_errno(errno);
     }
 
     return mp_const_none;
