@@ -79,8 +79,10 @@ void mp_task(void *pvParameter) {
     uart_init();
     machine_init();
 
-    // TODO: CONFIG_SPIRAM_SUPPORT is for 3.3 compatibility, remove after move to 4.0.
-    #if CONFIG_ESP32_SPIRAM_SUPPORT || CONFIG_SPIRAM_SUPPORT
+    #if defined(CONFIG_ESP32_HEAPSIZE)
+    size_t mp_task_heap_size = CONFIG_ESP32_HEAPSIZE;
+    void *mp_task_heap = malloc(mp_task_heap_size);
+    #elif CONFIG_ESP32_SPIRAM_SUPPORT
     // Try to use the entire external SPIRAM directly for the heap
     size_t mp_task_heap_size;
     void *mp_task_heap = (void *)0x3f800000;
