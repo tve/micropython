@@ -148,12 +148,17 @@ STATIC mp_obj_t machine_deepsleep(size_t n_args, const mp_obj_t *pos_args, mp_ma
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_deepsleep_obj, 0,  machine_deepsleep);
 
 STATIC mp_obj_t machine_reset_cause(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    if (is_soft_reset) {
+        return MP_OBJ_NEW_SMALL_INT(MP_SOFT_RESET);
+    }
     switch (esp_reset_reason()) {
         case ESP_RST_POWERON:
-        case ESP_RST_BROWNOUT:
             return MP_OBJ_NEW_SMALL_INT(MP_PWRON_RESET);
             break;
-
+        case ESP_RST_SW:
+        case ESP_RST_PANIC:
+            return MP_OBJ_NEW_SMALL_INT(MP_HARD_RESET);
+            break;
         case ESP_RST_INT_WDT:
         case ESP_RST_TASK_WDT:
         case ESP_RST_WDT:
@@ -164,8 +169,7 @@ STATIC mp_obj_t machine_reset_cause(size_t n_args, const mp_obj_t *pos_args, mp_
             return MP_OBJ_NEW_SMALL_INT(MP_DEEPSLEEP_RESET);
             break;
 
-        case ESP_RST_SW:
-        case ESP_RST_PANIC:
+        case ESP_RST_BROWNOUT:
         case ESP_RST_EXT: // Comment in ESP-IDF: "For ESP32, ESP_RST_EXT is never returned"
             return MP_OBJ_NEW_SMALL_INT(MP_HARD_RESET);
             break;
