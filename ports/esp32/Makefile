@@ -498,7 +498,6 @@ $(BUILD)/$(ESPCOMP)/lwip/%.o: CFLAGS += -Wno-address -Wno-unused-variable -Wno-u
 ESPIDF_LWIP_O = $(patsubst %.c,%.o,\
 	$(wildcard $(ESPCOMP)/lwip/apps/dhcpserver/*.c) \
 	$(wildcard $(ESPCOMP)/lwip/lwip/src/api/*.c) \
-	$(wildcard $(ESPCOMP)/lwip/lwip/src/apps/sntp/*.c) \
 	$(wildcard $(ESPCOMP)/lwip/lwip/src/core/*.c) \
 	$(wildcard $(ESPCOMP)/lwip/lwip/src/core/*/*.c) \
 	$(wildcard $(ESPCOMP)/lwip/lwip/src/netif/*.c) \
