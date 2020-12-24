@@ -53,8 +53,8 @@ NA2FEss2+KJUCjHc
 """
 chain = cert + key
 # Produce cert/key for MicroPython
-cert = cert[cert.index("M"):cert.index("=")+2]
-key = key[key.index("M"):key.rstrip().rindex("\n")+1]
+cert = cert[cert.index("M") : cert.index("=") + 2]
+key = key[key.index("M") : key.rstrip().rindex("\n") + 1]
 cert = binascii.a2b_base64(cert)
 key = binascii.a2b_base64(key)
 
@@ -67,8 +67,8 @@ def instance0():
     s.listen(1)
     multitest.next()
     s2, _ = s.accept()
-    if hasattr(ssl, 'SSLContext'):
-        fn = '/tmp/MP_test_cert.pem'
+    if hasattr(ssl, "SSLContext"):
+        fn = "/tmp/MP_test_cert.pem"
         with open(fn, "w") as f:
             f.write(chain)
         ctx = ssl.SSLContext()
@@ -81,10 +81,10 @@ def instance0():
     # test larger client->server record being read in small chunks
     total = 0
     fileno = s2
-    if hasattr(s2, 'fileno'):
+    if hasattr(s2, "fileno"):
         fileno = s2.fileno()
     while True:
-        if hasattr(ssl, 'SSLContext'):
+        if hasattr(ssl, "SSLContext"):
             # select doesn't actually work right in CPython! so skip it
             sel = [[1]]
         else:

@@ -16,7 +16,7 @@ async def read_first(host, port):
     reader, writer = await asyncio.open_connection(host, port, ssl=True)
 
     print("read something")
-    inbuf = b''
+    inbuf = b""
     while len(inbuf) < 20:
         try:
             b = await reader.read(100)

@@ -133,16 +133,16 @@ STATIC mp_obj_t mod_ssl_errstr(mp_obj_t err_in) {
     vstr_init_len(&vstr, 80);
 
     // Including mbedtls_strerror takes about 16KB on the esp32 due to all the strings
-#if 1
+    #if 1
     vstr.buf[0] = 0;
     mbedtls_strerror(err, vstr.buf, vstr.alloc);
     vstr.len = strlen(vstr.buf);
     if (vstr.len == 0) {
         return MP_OBJ_NULL;
     }
-#else
+    #else
     vstr_printf(vstr, "mbedtls error -0x%x\n", -err);
-#endif
+    #endif
     return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_ssl_errstr_obj, mod_ssl_errstr);
@@ -395,7 +395,9 @@ STATIC mp_uint_t socket_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, i
         // so find out. (There doesn't seem to be an equivalent issue with writes.)
         if ((arg & MP_STREAM_POLL_RD) && self->poll_by_read) {
             size_t avail = mbedtls_ssl_get_bytes_avail(&self->ssl);
-            if (avail > 0) ret = MP_STREAM_POLL_RD;
+            if (avail > 0) {
+                ret = MP_STREAM_POLL_RD;
+            }
         }
         // If we're polling to read but not write but mbedtls previously said it needs to write in
         // order to be able to read then poll for both and if either is available pretend the socket
@@ -403,7 +405,7 @@ STATIC mp_uint_t socket_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, i
         // well. Essentially, what we're ensuring is that one of mbedtls' read/write functions is
         // called as soon as the socket can do something.
         if ((arg & MP_STREAM_POLL_RD) && !(arg & MP_STREAM_POLL_WR) &&
-                self->poll_flag & READ_NEEDS_WRITE) {
+            self->poll_flag & READ_NEEDS_WRITE) {
             arg |= MP_STREAM_POLL_WR;
             ret |= mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
             if (ret & MP_STREAM_POLL_WR) {
@@ -411,9 +413,9 @@ STATIC mp_uint_t socket_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, i
                 ret &= ~MP_STREAM_POLL_WR;
             }
             return ret;
-        // Now comes the same logic flipped around for write
+            // Now comes the same logic flipped around for write
         } else if ((arg & MP_STREAM_POLL_WR) && !(arg & MP_STREAM_POLL_RD) &&
-                self->poll_flag & WRITE_NEEDS_READ) {
+                   self->poll_flag & WRITE_NEEDS_READ) {
             arg |= MP_STREAM_POLL_RD;
             ret |= mp_get_stream(self->sock)->ioctl(self->sock, request, arg, errcode);
             if (ret & MP_STREAM_POLL_RD) {

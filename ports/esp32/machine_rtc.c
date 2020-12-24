@@ -97,7 +97,7 @@ STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
     if (n_args == 0) {
         machine_rtc_init_helper(self, 0, NULL);
     } else {
-        machine_rtc_init_helper(self, n_args-1, args+1);
+        machine_rtc_init_helper(self, n_args - 1, args + 1);
     }
 
     return self;
@@ -145,13 +145,15 @@ STATIC mp_obj_t machine_rtc_datetime_helper(mp_obj_t self, mp_uint_t n_args, con
     }
 }
 STATIC mp_obj_t machine_rtc_datetime(mp_uint_t n_args, const mp_obj_t *args) {
-    return machine_rtc_datetime_helper(args[0], n_args-1, args+1);
+    return machine_rtc_datetime_helper(args[0], n_args - 1, args + 1);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_datetime_obj, 1, 2, machine_rtc_datetime);
 
 #if MICROPY_PY_UZLIB
 STATIC uint16_t machine_rtc_memcrc(const uint8_t *data) {
-    if (data == NULL) data = rtc_user_mem_data;
+    if (data == NULL) {
+        data = rtc_user_mem_data;
+    }
     uint32_t calc_crc = uzlib_crc32(&rtc_user_mem_magic, sizeof(rtc_user_mem_magic), 0xffffffff);
     calc_crc = uzlib_crc32(&rtc_user_mem_len, sizeof(rtc_user_mem_len), calc_crc);
     calc_crc = uzlib_crc32(data, rtc_user_mem_len, calc_crc);
@@ -182,7 +184,9 @@ STATIC mp_obj_t machine_rtc_init_helper(mp_obj_t self, mp_uint_t n_args, const m
 STATIC mp_obj_t machine_rtc_memory(mp_uint_t n_args, const mp_obj_t *args) {
     if (n_args == 1) {
         ulTaskNotifyTake(pdFALSE, 10);
-        if (rtc_user_mem_len == 0) return mp_const_empty_bytes;
+        if (rtc_user_mem_len == 0) {
+            return mp_const_empty_bytes;
+        }
         // Read RTC memory -- There's a small chance that magic is valid, len is random and
         // CRC will fail. In that case we might allocate up to MICROPY_HW_RTC_USER_MEM_MAX
         // in vain, but doing the CRC first is very slow 'cause RTC RAM is slow.

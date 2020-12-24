@@ -4,9 +4,10 @@
 from . import core
 
 try:
-    import ssl as modssl # module is used in function that has an ssl parameter
+    import ssl as modssl  # module is used in function that has an ssl parameter
 except:
     modssl = None
+
 
 class Stream:
     def __init__(self, s, e={}):
@@ -102,7 +103,7 @@ async def open_connection(host, port, ssl=None, server_hostname=None):
         if not modssl:
             raise ValueError("SSL not supported")
         if ssl is True:
-            ssl = {} # spec says to use ssl.create_default_context() but we don't have that
+            ssl = {}  # spec says to use ssl.create_default_context() but we don't have that
         elif isinstance(ssl, dict):
             # non-standard: accept dict with KW args suitable to call ssl.wrap_socket()
             if server_hostname:
@@ -112,7 +113,7 @@ async def open_connection(host, port, ssl=None, server_hostname=None):
         else:
             # spec says we should handle ssl.SSLContext object, but ain't got that
             raise ValueError("invalid ssl param")
-        ssl["do_handshake"] = False # as non-blocking as possible
+        ssl["do_handshake"] = False  # as non-blocking as possible
         s = modssl.wrap_socket(s, **ssl)
     ss = Stream(s)
     return ss, ss

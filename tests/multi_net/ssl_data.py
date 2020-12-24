@@ -48,8 +48,8 @@ NA2FEss2+KJUCjHc
 """
 chain = cert + key
 # Produce cert/key for MicroPython
-cert = cert[cert.index("M"):cert.index("=")+2]
-key = key[key.index("M"):key.rstrip().rindex("\n")+1]
+cert = cert[cert.index("M") : cert.index("=") + 2]
+key = key[key.index("M") : key.rstrip().rindex("\n") + 1]
 cert = binascii.a2b_base64(cert)
 key = binascii.a2b_base64(key)
 
@@ -63,8 +63,8 @@ def instance0():
     s.listen(1)
     multitest.next()
     s2, _ = s.accept()
-    if hasattr(ssl, 'SSLContext'):
-        fn = '/tmp/MP_test_cert.pem'
+    if hasattr(ssl, "SSLContext"):
+        fn = "/tmp/MP_test_cert.pem"
         with open(fn, "w") as f:
             f.write(chain)
         ctx = ssl.SSLContext()

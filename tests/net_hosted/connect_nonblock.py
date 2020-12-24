@@ -23,7 +23,7 @@ def do_connect(peer_addr, tls, handshake):
     s = socket.socket()
     s.setblocking(False)
     try:
-        #print("Connecting to", peer_addr)
+        # print("Connecting to", peer_addr)
         s.connect(peer_addr)
     except OSError as er:
         print("connect:", er.args[0] == errno.EINPROGRESS)

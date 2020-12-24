@@ -72,7 +72,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(gc_mem_free_obj, gc_mem_free);
 STATIC mp_obj_t gc_mem_maxfree(void) {
     gc_info_t info;
     gc_info(&info);
-    return MP_OBJ_NEW_SMALL_INT(info.max_free*MICROPY_BYTES_PER_GC_BLOCK);
+    return MP_OBJ_NEW_SMALL_INT(info.max_free * MICROPY_BYTES_PER_GC_BLOCK);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(gc_mem_maxfree_obj, gc_mem_maxfree);
 
