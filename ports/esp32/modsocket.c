@@ -365,7 +365,7 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
         // side-note: LwIP internally doesn't seem to have an error code for ECONNREFUSED and
         // so refused connections show up as ECONNRESET. Could be band-aided for blocking connect,
         // harder to do for nonblocking.
-        exception_from_errno(errno);
+        mp_raise_OSError(errno);
     }
 
     return mp_const_none;
