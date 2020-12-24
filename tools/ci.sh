@@ -107,6 +107,32 @@ function ci_esp32_idf4_build {
     make ${MAKEOPTS} -C ports/esp32
 }
 
+function ci_esp32_idf42_setup {
+    set -x
+    cd ..
+    pwd
+    mkdir -p tools
+    ls -ls tools
+    wget -nv https://github.com/espressif/esp-idf/releases/download/v4.2/esp-idf-v4.2.zip
+    unzip -q esp-idf*.zip
+    mv esp-idf-v4.2 esp-idf
+    cd esp-idf
+    ./install.sh
+}
+
+function ci_esp32_idf42_build {
+    make ${MAKEOPTS} -C mpy-cross
+    git submodule update --init lib/berkeley-db-1.xx
+    source ${IDF_PATH}/export.sh
+    cd ports/esp32
+    mkdir -p build-GENERIC
+    cd build-GENERIC
+    echo "cmake in $(pwd)"
+    cmake ..
+    echo "make in $(pwd)"
+    make ${MAKEOPTS} all size-components
+}
+
 ########################################################################################
 # ports/esp8266
 
