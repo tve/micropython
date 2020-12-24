@@ -65,6 +65,8 @@ typedef enum {
     MP_SOFT_RESET
 } reset_reason_t;
 
+STATIC bool is_soft_reset = 0;
+
 STATIC mp_obj_t machine_freq(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
         // get
@@ -176,6 +178,15 @@ STATIC mp_obj_t machine_reset_cause(size_t n_args, const mp_obj_t *pos_args, mp_
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_reset_cause_obj, 0,  machine_reset_cause);
+
+void machine_init(void) {
+    is_soft_reset = 0;
+}
+
+void machine_deinit(void) {
+    // we are doing a soft-reset so change the reset_cause
+    is_soft_reset = 1;
+}
 
 STATIC mp_obj_t machine_wake_reason(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     return MP_OBJ_NEW_SMALL_INT(esp_sleep_get_wakeup_cause());
