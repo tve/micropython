@@ -127,7 +127,8 @@ However the frequency at which the ESP32 listens to the access point's beacons i
 500ms as requested with the ``listen_interval`` parameter. One such listen period can be seen
 20ms before the end of the trace.
 
-Sample output from the ping shows irregular and sometimes long delays::
+Sample output from the ping shows irregular and
+sometimes long delays::
     64 bytes from 192.168.0.124: icmp_seq=44 ttl=255 time=86.9 ms
     64 bytes from 192.168.0.124: icmp_seq=45 ttl=255 time=110 ms
     64 bytes from 192.168.0.124: icmp_seq=46 ttl=255 time=136 ms
